@@ -1,5 +1,8 @@
 /**
- * 内容清洗规则 —— 抓取时与存量数据都用这一份，避免两处逻辑漂移。
+ * 内容清洗规则 —— 运行时取数与离线抓取脚本共用这一份，避免两处逻辑漂移。
+ *
+ * 用 .mjs 而非 .ts：Next 侧与 node 脚本都要 import 它，
+ * 保持单一实现比统一语言更重要（tsconfig 已开 allowJs）。
  *
  * 三类处理：
  *   1. 站外引流链接改写到本站
@@ -26,7 +29,11 @@ const TEXT_REWRITES = [
   [/\bAIbase\b/gi, BRAND],
 ];
 
-/** 纯文本字段（标题、摘要、来源名）的清洗 */
+/**
+ * 纯文本字段（标题、摘要、来源名）的清洗
+ * @param {string | null | undefined} s
+ * @returns {string}
+ */
 export function cleanText(s) {
   if (!s || typeof s !== "string") return s;
   let out = s;
@@ -34,7 +41,11 @@ export function cleanText(s) {
   return out;
 }
 
-/** 正文 HTML：先做文本改写，再修图片属性 */
+/**
+ * 正文 HTML：先做文本改写，再修图片属性
+ * @param {string | null | undefined} html
+ * @returns {string}
+ */
 export function cleanHtml(html) {
   if (!html || typeof html !== "string") return html;
   let out = cleanText(html);
@@ -73,7 +84,12 @@ export function cleanHtml(html) {
   return out;
 }
 
-/** 对一条文章就地清洗 */
+/**
+ * 对一条文章就地清洗
+ * @template {Record<string, any>} T
+ * @param {T} a
+ * @returns {T}
+ */
 export function cleanArticle(a) {
   for (const f of ["title", "subtitle", "description", "sourceName", "author", "sourceUrl"]) {
     if (a[f]) a[f] = cleanText(a[f]);

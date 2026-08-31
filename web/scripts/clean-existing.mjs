@@ -6,7 +6,7 @@
 import { readFile, writeFile, copyFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { cleanArticle } from "./clean-content.mjs";
+import { cleanArticle } from "../lib/clean.mjs";
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url)).replace(/\/scripts$/, "");
 const FILE = path.join(ROOT, "data", "articles.json");

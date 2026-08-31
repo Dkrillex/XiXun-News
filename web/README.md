@@ -1,13 +1,12 @@
 # xixuncloud
 
 Next.js 15（App Router）+ React 19 + Tailwind CSS v4。
-内容同步入库后由站点自身提供，运行时不依赖外部服务。
+内容在请求时代理上游接口，不依赖本地数据文件 —— 部署即可用，无需构建期抓取。
 
 ## 启动
 
 ```bash
 npm install
-npm run ingest      # 先同步内容，否则页面是空的
 npm run dev         # http://localhost:3100
 ```
 
@@ -18,34 +17,33 @@ npm run build         # 产物进 .next
 npm run build:safe    # 产物进 .next-build —— dev 正在跑时用这个
 ```
 
-> ⚠️ 不要在 `next dev` 运行时跑 `npm run build` —— 两者共用 `.next` 会互相破坏，
-> dev server 会开始返回 `Cannot find module './xxx.js'`。用 `build:safe` 避开。
+> ⚠️ 不要在 `next dev` 运行时跑 `npm run build` —— 两者共用 `.next` 会互相破坏。
 
-## 内容同步
+## 数据来源
+
+请求全部在 Server Component 里发出，浏览器不直连上游：不暴露上游地址，也没有 CORS 问题。
+响应经 `lib/clean.mjs` 清洗后再交给页面，且只挑页面需要的字段。
+
+缓存（`lib/content.ts` 的 `TTL`）：列表 300s / 详情 3600s / 榜单 600s。
+上游要求带 `t` 时间戳，代理层按 revalidate 窗口取整，同窗口内 URL 一致才能命中 Next 的 fetch 缓存。
+
+**上游翻页上限为 10 页**：接口的 `totalPage` 会声称上千页，但 `pageNo > 10` 一律返回第 10 页。
+`UPSTREAM_MAX_PAGE` 据此收敛分页控件与搜索范围，避免给出够不到的页码。
+
+### 离线抓取（可选）
+
+`scripts/` 下的两个抓取器可以把内容抓到 `data/articles.json`：
 
 ```bash
-npm run ingest                          # 中文资讯 10 页 + 日报 3 页（含正文）
-npm run ingest -- --pages 30            # 同步更多
+npm run ingest                          # 上游接口
 npm run ingest -- --langs zh,en,tw,ja   # 多语言
-npm run ingest -- --fresh               # 丢弃历史重新同步
-npm run ingest -- --no-detail           # 只同步列表，快 20 倍
+npm run ingest:rss                      # RSS 聚合（源在 lib/feeds.ts，默认全关）
+npm run clean                           # 对已抓数据重新应用清洗规则
 ```
 
-产物是 `data/articles.json`，站点启动时读入内存（60 秒缓存）。
-增量运行会保留历史条目，同 id 用新数据覆盖。
-
-### RSS 聚合链路
-
-`scripts/ingest.mjs` + `lib/feeds.ts` 是一套完整的 RSS/Atom 聚合实现，
-支持多源并发、Open Graph 补图补摘要、模板化摘要清理。
-当前 `lib/feeds.ts` 里的源全部 `enabled: false`。要启用：
-
-```bash
-# 1. 编辑 lib/feeds.ts，把需要的源打开
-npm run ingest:rss
-```
-
-两套同步器输出同一种格式，可以混用 —— 取数层不关心内容从哪来。
+当前运行时不读这个文件。要切成本地数据模式，改写 `lib/content.ts` 即可，
+但记得在 `next.config.ts` 加回 `outputFileTracingIncludes`，
+否则 `data/` 不会被打包进 serverless function，部署后全站空白。
 
 ## 路由
 
@@ -104,4 +102,3 @@ data/articles.json     同步产物（已 gitignore）
 1. **图片走远程 CDN**。`next.config.ts` 放开了 https 通配，
    这让 `/_next/image` 成为开放图片代理。生产环境建议收敛白名单，
    或同步时把图片下载到本地。
-2. **同步量默认较小**（260 条）。要更多用 `--pages`，注意限流。
