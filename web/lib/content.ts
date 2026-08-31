@@ -29,7 +29,12 @@ async function load(): Promise<Store> {
     cache = { at: Date.now(), store };
     return store;
   } catch {
-    // 还没抓取过 —— 返回空集，页面会显示空状态而不是报错
+    // 还没抓取过 —— 返回空集，页面显示空状态而不是报错。
+    // 告警要走服务端日志（不进页面文案），且生产环境同样输出：
+    // 部署漏跑 ingest 会导致全站空白，静默失败比开发期更难排查。
+    console.error(
+      `[content] 读不到 ${DATA_FILE}，全站将无内容。需先执行 npm run ingest。`,
+    );
     const empty: Store = { generatedAt: "", articles: [] };
     cache = { at: Date.now(), store: empty };
     return empty;

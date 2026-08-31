@@ -5,5 +5,9 @@ next-env.d.ts
 .env*.local
 *.tsbuildinfo
 
-# 抓取产物，本地生成
+# 内容同步产物，本地生成
 web/data/articles.json
+web/data/articles.backup.json
+
+# 本地分析笔记，不入库
+docs/

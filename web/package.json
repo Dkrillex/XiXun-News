@@ -9,7 +9,8 @@
     "lint": "next lint",
     "build:safe": "NEXT_DIST_DIR=.next-build next build",
     "ingest": "node scripts/ingest-aibase.mjs",
-    "ingest:rss": "node scripts/ingest.mjs"
+    "ingest:rss": "node scripts/ingest.mjs",
+    "clean": "node scripts/clean-existing.mjs"
   },
   "dependencies": {
     "fast-xml-parser": "^5.11.1",

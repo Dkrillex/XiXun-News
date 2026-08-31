@@ -13,6 +13,7 @@
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { cleanArticle } from "./clean-content.mjs";
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url)).replace(/\/scripts$/, "");
 const DATA_FILE = path.join(ROOT, "data", "articles.json");
@@ -133,7 +134,7 @@ async function fetchChannel(lang, channel, pages) {
   }
   console.log();
 
-  if (NO_DETAIL) return items.map((it) => toArticle(it, null, lang, channel));
+  if (NO_DETAIL) return items.map((it) => cleanArticle(toArticle(it, null, lang, channel)));
 
   // 详情并发抓取
   const out = [];
@@ -148,10 +149,10 @@ async function fetchChannel(lang, channel, pages) {
             ? api("/api/aiInfo/dailyNewsDetail", { id: it.oid }, lang)
             // 注意：type 必须是字符串 "news"，传数字上游返回 4001
             : api("/api/aiInfo/detail", { id: it.oid, type: "news" }, lang));
-        out.push(toArticle(it, detail, lang, channel));
+        out.push(cleanArticle(toArticle(it, detail, lang, channel)));
       } catch {
         failed++;
-        out.push(toArticle(it, null, lang, channel));   // 降级：保留列表信息
+        out.push(cleanArticle(toArticle(it, null, lang, channel)));   // 降级：保留列表信息
       }
       if (out.length % 20 === 0) {
         process.stdout.write(`\r  [${lang}/${channel}] 正文 ${out.length}/${items.length}`);

@@ -10,6 +10,7 @@ import { readFile, writeFile, mkdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { createRequire } from "node:module";
+import { cleanArticle } from "./clean-content.mjs";
 
 const require = createRequire(import.meta.url);
 const { XMLParser } = require("fast-xml-parser");
@@ -139,7 +140,7 @@ function parseFeed(xml, source) {
       excerptOnly: !source.fullText || !fullHtml,
     });
   }
-  return out;
+  return out.map(cleanArticle);
 }
 
 /* ── 抓取 ──────────────────────────────────────────── */
@@ -363,6 +364,10 @@ async function main() {
 
   const clearedDesc = dropBoilerplateDescriptions(articles);
   if (clearedDesc) console.log(`清理模板化摘要 ${clearedDesc} 条`);
+
+  // enrichAll 从原文页抓的 og:description 是在 parseFeed 之后写入的，
+  // 绕过了那一轮清洗 —— 这里统一再洗一次，规则才算全覆盖。
+  articles.forEach(cleanArticle);
 
   await mkdir(path.dirname(DATA_FILE), { recursive: true });
   await writeFile(
