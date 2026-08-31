@@ -1,0 +1,9 @@
+node_modules/
+.next/
+.next-build/
+next-env.d.ts
+.env*.local
+*.tsbuildinfo
+
+# 抓取产物，本地生成
+web/data/articles.json
